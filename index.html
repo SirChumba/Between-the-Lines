@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no"
+    />
+    <title>Between the Lines</title>
+    <style>
+      /* Global styles */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: sans-serif;
+        background: #121212;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        touch-action: manipulation; /* Helps mobile scrolling */
+      }
+
+      .screen {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        width: 90vw;
+        max-width: 400px;
+      }
+
+      .active {
+        display: flex !important;
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 0.5em;
+        text-align: center;
+        font-size: 1.5rem;
+      }
+
+      button {
+        font-size: 1.1rem;
+        padding: 1em;
+        margin: 0.5em 0;
+        border: none;
+        border-radius: 8px;
+        background: #00b894;
+        color: #fff;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      input[type="number"],
+      input[type="text"] {
+        font-size: 1rem;
+        padding: 0.6em;
+        margin: 0.4em 0;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 5px;
+        border: none;
+      }
+
+      /* Slider container and results bar */
+      #sliderContainer,
+      #revealSlider {
+        position: relative;
+        width: 40px;
+        height: 60vh;
+        background: #333;
+        margin: 20px auto;
+        border-radius: 12px;
+        max-height: 400px;
+      }
+
+      /* Target zones */
+      .zone {
+        position: absolute;
+        width: 100%;
+        border-radius: 2px;
+      }
+
+      #targetOuter {
+        background: rgba(0, 191, 255, 0.2);
+      }
+
+      #targetMiddle {
+        background: rgba(0, 191, 255, 0.5);
+      }
+
+      #targetCenter {
+        background: rgba(0, 191, 255, 1);
+      }
+
+      #revealOuter {
+        background: rgba(0, 191, 255, 0.2);
+      }
+
+      #revealMiddle {
+        background: rgba(0, 191, 255, 0.5);
+      }
+
+      #revealCenter {
+        background: rgba(0, 191, 255, 1);
+      }
+
+      /* Guess marker */
+      #guessMarker {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #ff00aa;
+        z-index: 10;
+        box-shadow: 0 0 6px 2px rgba(255, 0, 170, 0.8);
+      }
+
+      /* Vertical slider input */
+      #slider {
+        writing-mode: bt-lr;
+        -webkit-appearance: slider-vertical;
+        height: 60vh;
+        max-height: 400px;
+        margin: 0 auto 10px;
+        width: 40px;
+        background: transparent;
+        cursor: pointer;
+        outline: none;
+      }
+
+      /* Prompt labels */
+      #guessTopLabel,
+      #guessBottomLabel {
+        font-weight: bold;
+        font-size: 1.1rem;
+        width: 40px;
+        text-align: center;
+        user-select: none;
+        margin: 0;
+      }
+
+      #currentPlayerName {
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        text-align: center;
+        user-select: none;
+      }
+
+      #passTurnMessage {
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1em;
+      }
+
+      th,
+      td {
+        border: 1px solid #666;
+        padding: 0.5em;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      th {
+        background: #00b894;
+      }
+
+      /* Small screen adjustments */
+      @media (max-width: 600px) {
+        h1,
+        h2 {
+          font-size: 1.3rem;
+        }
+
+        #slider,
+        #sliderContainer,
+        #revealSlider {
+          height: 50vh;
+          max-height: 300px;
+        }
+
+        button {
+          font-size: 1rem;
+          padding: 0.9em;
+        }
+
+        #guessTopLabel,
+        #guessBottomLabel {
+          font-size: 1rem;
+        }
+
+        #currentPlayerName,
+        #passTurnMessage {
+          font-size: 1.1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Mode Select -->
+    <div id="mainMenu" class="screen active">
+      <h1>Between the Lines</h1>
+      <button onclick="selectMode('individual')">Individual</button>
+      <button onclick="selectMode('teams')">Teams</button>
+    </div>
+
+    <!-- Individual setup -->
+    <div id="individualCount" class="screen">
+      <h2>How many players?</h2>
+      <input
+        id="countInput"
+        type="number"
+        min="2"
+        max="10"
+        placeholder="2–10 players"
+      />
+      <button onclick="confirmCount()">Next</button>
+    </div>
+    <div id="individualNames" class="screen">
+      <h2>Enter Names</h2>
+      <div id="namesList"></div>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Team setup -->
+    <div id="teamCount" class="screen">
+      <h2>How many teams?</h2>
+      <input
+        id="teamCountInput"
+        type="number"
+        min="2"
+        max="4"
+        placeholder="2–4 teams"
+      />
+      <button onclick="confirmTeamCount()">Next</button>
+    </div>
+    <div id="teamNames" class="screen">
+      <h2>Enter Team Names</h2>
+      <div id="teamsList"></div>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Pass Turn Screen -->
+    <div id="passTurnScreen" class="screen">
+      <div id="passTurnMessage"></div>
+      <button onclick="startRound()">Start Round</button>
+    </div>
+
+    <!-- Speaker screen -->
+    <div id="speakerScreen" class="screen">
+      <div id="currentPlayerName"></div>
+      <h2>Your Turn to Give a Clue</h2>
+      <div style="display: flex; flex-direction: column; align-items: center">
+        <span
+          id="topLabel"
+          style="
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            user-select: none;
+          "
+        ></span>
+        <div
+          id="sliderContainer"
+          style="
+            position: relative;
+            width: 40px;
+            height: 60vh;
+            background: #333;
+            border-radius: 12px;
+          "
+        >
+          <!-- Nested zones -->
+          <div id="targetOuter" class="zone"></div>
+          <div id="targetMiddle" class="zone"></div>
+          <div id="targetCenter" class="zone"></div>
+        </div>
+        <span
+          id="bottomLabel"
+          style="
+            margin-top: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            user-select: none;
+          "
+        ></span>
+      </div>
+      <button onclick="goGuess()">I'm ready</button>
+    </div>
+
+    <!-- Guess screen -->
+    <div id="guessScreen" class="screen">
+      <h2>Guess Now!</h2>
+      <div
+        style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-bottom: 10px;
+        "
+      >
+        <p id="guessTopLabel"></p>
+        <input id="slider" type="range" min="0" max="100" value="50" />
+        <p id="guessBottomLabel"></p>
+      </div>
+      <button onclick="submitGuess()">Submit Guess</button>
+    </div>
+
+    <!-- Reveal screen -->
+    <div id="revealScreen" class="screen">
+      <h2>Results</h2>
+      <div
+        id="revealSlider"
+        style="
+          position: relative;
+          width: 40px;
+          height: 60vh;
+          background: #333;
+          margin: 20px auto;
+          border-radius: 12px;
+        "
+      >
+        <div id="revealOuter" class="zone"></div>
+        <div id="revealMiddle" class="zone"></div>
+        <div id="revealCenter" class="zone"></div>
+        <div id="guessMarker"></div>
+      </div>
+      <div
+        id="revealText"
+        style="margin-top: 1em; text-align: center; font-size: 1.2rem"
+      ></div>
+      <button onclick="nextRoundPrompt()">Next Round</button>
+      <button onclick="showScoreboard()">Results</button>
+    </div>
+
+    <!-- Scoreboard Screen -->
+    <div id="scoreboardScreen" class="screen">
+      <h2>Scoreboard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Player/Team</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboardBody"></tbody>
+      </table>
+      <button onclick="resetGame()">Restart Game</button>
+    </div>
+
+    <script>
+      const prompts = [
+        { low: "Boring", high: "Exciting" },
+        { low: "Cheap", high: "Expensive" },
+        { low: "Short", high: "Long" },
+        { low: "Soft", high: "Hard" },
+        { low: "Quiet", high: "Loud" },
+        { low: "Weak", high: "Strong" },
+        { low: "Basic", high: "Fancy" },
+        { low: "Introvert", high: "Extrovert" },
+        { low: "Tame", high: "Wild" },
+        { low: "Ugly", high: "Beautiful" },
+        { low: "Bad movie", high: "Great movie" },
+        { low: "Useless", high: "Essential" },
+        { low: "Cold", high: "Hot" },
+        { low: "Unpopular", high: "Popular" },
+        { low: "Scary", high: "Comforting" },
+        { low: "Easy", high: "Difficult" },
+        { low: "Unhealthy", high: "Healthy" },
+        { low: "Old-fashioned", high: "Modern" },
+        { low: "Lazy", high: "Energetic" },
+        { low: "Low effort", high: "High effort" },
+        { low: "Broke", high: "Rich" },
+        { low: "Uncool", high: "Cool" },
+        { low: "Underrated", high: "Overrated" },
+        { low: "Realistic", high: "Fantasy" },
+        { low: "Gross", high: "Delicious" },
+        { low: "Clean freak", high: "Messy disaster" },
+        { low: "Dry", high: "Juicy" },
+        { low: "Forgettable", high: "Iconic" },
+        { low: "Small brain", high: "Galaxy brain" },
+        { low: "Monday mood", high: "Friday mood" },
+        { low: "Boomer energy", high: "Gen Z chaos" },
+        { low: "Innocent", high: "Down bad" },
+        { low: "Cat person", high: "Dog person" },
+        { low: "Red flag", high: "Green flag" },
+        { low: "Wholesome", high: "Unhinged" },
+        { low: "Cringe", high: "Slay" },
+        { low: "NPC behavior", high: "Main character" },
+        { low: "Intro arc", high: "Final boss" },
+        { low: "Awkward", high: "Flirt expert" },
+        { low: "Sober", high: "Wasted" },
+        { low: "Designated driver", high: "Life of the party" },
+        { low: "Responsible adult", high: "Menace to society" },
+        { low: "Trusts too easily", high: "Trust issues" },
+        { low: "Never been kissed", high: "Hopeless romantic" },
+        { low: "Watch one episode", high: "Entire season in one night" },
+        { low: "Couch potato", high: "Lives at the gym" },
+        { low: "Tries a sip", high: "Chugs it" },
+        { low: "Still uses Facebook", high: "Lives on TikTok" },
+        { low: "Saves money", high: "Impulse buys everything" },
+        { low: "Let's just chill", high: "One more bar" },
+        { low: "Microwave chef", high: "MasterChef" },
+        { low: "Always early", high: "Always late" },
+        { low: "Budget master", high: "Spends recklessly" },
+        { low: "Casual gamer", high: "Pro gamer" },
+        { low: "Likes to plan", high: "Goes with the flow" },
+        { low: "Careful driver", high: "Speed demon" },
+        { low: "Designated driver", high: "Blackout legend" },
+      ];
+
+      let mode,
+        players = [],
+        teams = [],
+        currentPrompt,
+        targetOuterMin,
+        targetOuterMax,
+        targetMiddleMin,
+        targetMiddleMax,
+        targetCenterMin,
+        targetCenterMax;
+
+      let guesses = [];
+      let currentPlayerIndex = 0;
+      let scores = [];
+
+      function show(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+
+      function selectMode(m) {
+        mode = m;
+        players = [];
+        teams = [];
+        scores = [];
+        currentPlayerIndex = 0;
+        show(m === "individual" ? "individualCount" : "teamCount");
+      }
+
+      function confirmCount() {
+        const n = +document.getElementById("countInput").value;
+        if (!n || n < 2 || n > 10) {
+          alert("Enter 2–10");
+          return;
+        }
+        const list = document.getElementById("namesList");
+        list.innerHTML = "";
+        for (let i = 1; i <= n; i++) {
+          list.innerHTML += `<input type=text placeholder="Player ${i}">`;
+        }
+        show("individualNames");
+      }
+
+      function confirmTeamCount() {
+        const n = +document.getElementById("teamCountInput").value;
+        if (!n || n < 2 || n > 4) {
+          alert("Enter 2–4");
+          return;
+        }
+        const list = document.getElementById("teamsList");
+        list.innerHTML = "";
+        for (let i = 1; i <= n; i++) {
+          list.innerHTML += `<input type=text placeholder="Team ${i}">`;
+        }
+        show("teamNames");
+      }
+
+      function startGame() {
+        if (mode === "individual") {
+          players = Array.from(
+            document.querySelectorAll("#namesList input")
+          ).map((i) => i.value.trim());
+          if (players.some((v) => !v)) return alert("Fill all player names");
+          scores = new Array(players.length).fill(0);
+        } else {
+          teams = Array.from(document.querySelectorAll("#teamsList input")).map(
+            (i) => i.value.trim()
+          );
+          if (teams.some((v) => !v)) return alert("Fill all team names");
+          scores = new Array(teams.length).fill(0);
+        }
+        currentPlayerIndex = 0;
+        showPassTurnScreen();
+      }
+
+      function showPassTurnScreen() {
+        const currentName =
+          mode === "individual"
+            ? players[currentPlayerIndex]
+            : teams[currentPlayerIndex];
+        document.getElementById(
+          "passTurnMessage"
+        ).textContent = `Pass to ${currentName} to start their turn.`;
+        show("passTurnScreen");
+      }
+
+      function startRound() {
+        guesses = [];
+        currentPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+
+        // Outer zone: random between 20% and 70%, width 15-25%
+        targetOuterMin = Math.random() * 50 + 20;
+        targetOuterMax = targetOuterMin + Math.random() * 10 + 15;
+        if (targetOuterMax > 100) targetOuterMax = 100;
+
+        // Middle zone: center ~ middle of outer, width about half outer width
+        const outerWidth = targetOuterMax - targetOuterMin;
+        const middleWidth = outerWidth / 2;
+        const middleCenter = (targetOuterMin + targetOuterMax) / 2;
+        targetMiddleMin = middleCenter - middleWidth / 2;
+        targetMiddleMax = middleCenter + middleWidth / 2;
+
+        // Center zone: center ~ middle of middle, width about 1/3 middle width
+        const middleWidthActual = targetMiddleMax - targetMiddleMin;
+        const centerWidth = middleWidthActual / 3;
+        const centerCenter = (targetMiddleMin + targetMiddleMax) / 2;
+        targetCenterMin = centerCenter - centerWidth / 2;
+        targetCenterMax = centerCenter + centerWidth / 2;
+
+        // Set top and bottom labels on speaker slider
+        document.getElementById("topLabel").textContent = currentPrompt.high;
+        document.getElementById("bottomLabel").textContent = currentPrompt.low;
+
+        // Show zones on speaker slider (invert because top:0% is top)
+        document.getElementById("targetOuter").style.top =
+          100 - targetOuterMax + "%";
+        document.getElementById("targetOuter").style.height =
+          targetOuterMax - targetOuterMin + "%";
+
+        document.getElementById("targetMiddle").style.top =
+          100 - targetMiddleMax + "%";
+        document.getElementById("targetMiddle").style.height =
+          targetMiddleMax - targetMiddleMin + "%";
+
+        document.getElementById("targetCenter").style.top =
+          100 - targetCenterMax + "%";
+        document.getElementById("targetCenter").style.height =
+          targetCenterMax - targetCenterMin + "%";
+
+        // Show current player name on speaker screen
+        const currentName =
+          mode === "individual"
+            ? players[currentPlayerIndex]
+            : teams[currentPlayerIndex];
+        document.getElementById("currentPlayerName").textContent = currentName;
+
+        show("speakerScreen");
+      }
+
+      function goGuess() {
+        // Reset guess slider to center (50%)
+        const slider = document.getElementById("slider");
+        slider.value = 50;
+        // Set guess screen prompt labels
+        document.getElementById("guessTopLabel").textContent =
+          currentPrompt.high;
+        document.getElementById("guessBottomLabel").textContent =
+          currentPrompt.low;
+        show("guessScreen");
+      }
+
+      function submitGuess() {
+        const val = +document.getElementById("slider").value;
+        guesses.push(val);
+
+        // Show zones on reveal slider
+        document.getElementById("revealOuter").style.top =
+          100 - targetOuterMax + "%";
+        document.getElementById("revealOuter").style.height =
+          targetOuterMax - targetOuterMin + "%";
+
+        document.getElementById("revealMiddle").style.top =
+          100 - targetMiddleMax + "%";
+        document.getElementById("revealMiddle").style.height =
+          targetMiddleMax - targetMiddleMin + "%";
+
+        document.getElementById("revealCenter").style.top =
+          100 - targetCenterMax + "%";
+        document.getElementById("revealCenter").style.height =
+          targetCenterMax - targetCenterMin + "%";
+
+        // Position guess marker (guess from bottom)
+        document.getElementById("guessMarker").style.top = 100 - val + "%";
+
+        // Calculate score for this guess
+        let pointsEarned = 0;
+        if (val >= targetCenterMin && val <= targetCenterMax) {
+          pointsEarned = 3;
+        } else if (val >= targetMiddleMin && val <= targetMiddleMax) {
+          pointsEarned = 2;
+        } else if (val >= targetOuterMin && val <= targetOuterMax) {
+          pointsEarned = 1;
+        }
+
+        // Add points to current player/team
+        scores[currentPlayerIndex] += pointsEarned;
+
+        // --- Accuracy logic ---
+        let accuracyPercent;
+        if (val >= targetCenterMin && val <= targetCenterMax) {
+          accuracyPercent = 100;
+        } else {
+          const distanceToEdge =
+            val < targetCenterMin
+              ? targetCenterMin - val
+              : val - targetCenterMax;
+
+          const maxDistance = Math.max(targetCenterMin, 100 - targetCenterMax);
+          accuracyPercent = Math.max(
+            0,
+            Math.round(100 - (distanceToEdge / maxDistance) * 100)
+          );
+        }
+
+        // Display text
+        const text = `
+    <p><strong>Your accuracy:</strong> ${accuracyPercent}%</p>
+    <p><strong>Points earned this round:</strong> ${pointsEarned}</p>
+  `;
+
+        document.getElementById("revealText").innerHTML = text;
+        show("revealScreen");
+      }
+
+      function nextRoundPrompt() {
+        // Move to next player/team index
+        currentPlayerIndex++;
+        if (mode === "individual") {
+          if (currentPlayerIndex >= players.length) {
+            currentPlayerIndex = 0;
+          }
+        } else {
+          if (currentPlayerIndex >= teams.length) {
+            currentPlayerIndex = 0;
+          }
+        }
+        showPassTurnScreen();
+      }
+
+      function showScoreboard() {
+        const tbody = document.getElementById("scoreboardBody");
+        tbody.innerHTML = "";
+        if (mode === "individual") {
+          players.forEach((name, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${name}</td><td>${scores[i]}</td>`;
+            tbody.appendChild(tr);
+          });
+        } else {
+          teams.forEach((name, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${name}</td><td>${scores[i]}</td>`;
+            tbody.appendChild(tr);
+          });
+        }
+        show("scoreboardScreen");
+      }
+
+      function resetGame() {
+        // Reset all states and go back to main menu
+        players = [];
+        teams = [];
+        scores = [];
+        currentPlayerIndex = 0;
+        mode = undefined;
+        show("mainMenu");
+      }
+    </script>
+  </body>
+</html>
